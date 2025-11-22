@@ -17,4 +17,4 @@ This folder contains Jupyter notebooks for exploratory analysis and reporting.
 ## How to Run
 1. Install requirements: `pip install -r requirements.txt`
 2. Launch Jupyter: `jupyter notebook` or `jupyter lab`
-3. Open `01_exploratory_data_analysis.ipynb`
+3. Open `01_eda.ipynb`
