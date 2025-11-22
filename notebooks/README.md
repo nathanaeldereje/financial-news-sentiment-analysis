@@ -1,8 +1,3 @@
-
-### 2. notebooks/README.md
-Create this inside `notebooks/`:
-
-```markdown
 # Notebooks
 This folder contains Jupyter notebooks for exploratory analysis and reporting.
 
