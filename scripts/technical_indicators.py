@@ -1,52 +1,78 @@
 """
 technical_indicators.py
 
-Module to calculate common technical indicators for stock data using TA-Lib.
+Calculate common technical indicators using pandas-ta (pure Python, no compilation needed).
+Fully compatible with pandas MultiIndex/groupby and works in any environment.
 """
 
+from __future__ import annotations
 import pandas as pd
-import talib
+import pandas_ta as ta  # type: ignore
+
 
 def add_ta_indicators(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Add technical indicators (SMA, EMA, RSI, MACD) to a multi-ticker stock DataFrame.
+    Add popular technical indicators to stock price data.
 
     Parameters
     ----------
     df : pd.DataFrame
-        Stock data containing columns: ['Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'Ticker']
+        Must contain columns: ['Open', 'High', 'Low', 'Close', 'Volume']
+        Optional: 'Ticker' column for multi-ticker support
 
     Returns
     -------
     pd.DataFrame
-        DataFrame with added columns:
-        ['SMA_20', 'SMA_50', 'EMA_20', 'RSI_14', 'MACD', 'MACD_signal', 'MACD_hist']
+        Original dataframe with new indicator columns:
+            SMA_20, SMA_50, EMA_20, RSI_14, MACD_12_26_9, MACD_signal_12_26_9, MACD_hist_12_26_9
     """
-
-    # Make a copy to avoid changing the original DataFrame
     df = df.copy()
 
-    # ------------------------------
-    # Moving Averages
-    # ------------------------------
-    df["SMA_20"] = df.groupby("Ticker")["Close"].transform(lambda x: talib.SMA(x, timeperiod=20))
-    df["SMA_50"] = df.groupby("Ticker")["Close"].transform(lambda x: talib.SMA(x, timeperiod=50))
-    df["EMA_20"] = df.groupby("Ticker")["Close"].transform(lambda x: talib.EMA(x, timeperiod=20))
+    # Ensure proper column names and sorting
+    required_cols = ["Open", "High", "Low", "Close", "Volume"]
+    if not all(col in df.columns for col in required_cols):
+        raise ValueError(f"DataFrame must contain columns: {required_cols}")
 
-    # ------------------------------
-    # Relative Strength Index
-    # ------------------------------
-    df["RSI_14"] = df.groupby("Ticker")["Close"].transform(lambda x: talib.RSI(x, timeperiod=14))
+    # If multi-ticker data, apply indicators per ticker
+    if "Ticker" in df.columns:
+        df = df.sort_values(["Ticker", "Date"])
 
-    # ------------------------------
-    # MACD (Momentum Indicator)
-    # ------------------------------
-    def macd_group(x):
-        macd, signal, hist = talib.MACD(x, fastperiod=12, slowperiod=26, signalperiod=9)
-        return pd.DataFrame({"MACD": macd, "MACD_signal": signal, "MACD_hist": hist})
+        # Simple Moving Averages
+        df["SMA_20"] = df.groupby("Ticker")["Close"].transform(
+            lambda x: ta.sma(x, length=20)
+        )
+        df["SMA_50"] = df.groupby("Ticker")["Close"].transform(
+            lambda x: ta.sma(x, length=50)
+        )
 
-    macd_df = df.groupby("Ticker")["Close"].apply(macd_group)
-    macd_df.index = macd_df.index.droplevel(0)  # flatten MultiIndex
-    df = pd.concat([df, macd_df], axis=1)
+        # Exponential Moving Average
+        df["EMA_20"] = df.groupby("Ticker")["Close"].transform(
+            lambda x: ta.ema(x, length=20)
+        )
+
+        # RSI
+        df["RSI_14"] = df.groupby("Ticker")["Close"].transform(
+            lambda x: ta.rsi(x, length=14)
+        )
+
+        # MACD (returns a DataFrame with macd, histogram, signal)
+        macd = df.groupby("Ticker", group_keys=False)["Close"].apply(
+            lambda x: ta.macd(x, fast=12, slow=26, signal=9)
+        )
+
+        # Rename columns to match old naming convention
+        macd.columns = ["MACD_12_26_9", "MACD_hist_12_26_9", "MACD_signal_12_26_9"]
+        df = pd.concat([df.reset_index(drop=True), macd.reset_index(drop=True)], axis=1)
+
+    else:
+        # Single ticker case
+        df["SMA_20"] = ta.sma(df["Close"], length=20)
+        df["SMA_50"] = ta.sma(df["Close"], length=50)
+        df["EMA_20"] = ta.ema(df["Close"], length=20)
+        df["RSI_14"] = ta.rsi(df["Close"], length=14)
+
+        macd = ta.macd(df["Close"], fast=12, slow=26, signal=9)
+        macd.columns = ["MACD_12_26_9", "MACD_hist_12_26_9", "MACD_signal_12_26_9"]
+        df = pd.concat([df, macd], axis=1)
 
     return df
