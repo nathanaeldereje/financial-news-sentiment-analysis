@@ -10,7 +10,7 @@ This folder contains Jupyter notebooks for exploratory analysis and reporting.
 - Designed to be shared with stakeholders or evaluators
 
 ### Future Notebooks (Planned)
-- 02_stock_price_correlation.ipynb
+- 02_quant_analysis.ipynb
 - 03_sentiment_analysis.ipynb
 - 04_predictive_modeling.ipynb
 
