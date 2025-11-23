@@ -1,5 +1,4 @@
 import pandas as pd
-import os
 
 def load_data(path) -> pd.DataFrame:
     """
@@ -43,64 +42,3 @@ def preprocess_data(df):
     df['hour'] = df['date'].dt.hour
     df['date_only'] = df['date'].dt.date
     return df
-
-
-
-
-
-
-def load_stock_data(file_paths):
-    """
-    Load multiple stock CSV files and concatenate them into a single DataFrame.
-    
-    Parameters:
-    -----------
-    file_paths : list of str or dict
-        List of paths to CSV files, or dict like {'AAPL': 'data/AAPL.csv', ...}
-    
-    Returns:
-    --------
-    pd.DataFrame
-        Combined dataframe with 'Ticker' column, sorted by Date and Ticker
-    """
-    dfs = []
-    
-    # Handle both list of paths and dict (more flexible)
-    if isinstance(file_paths, dict):
-        paths_dict = file_paths
-    else:
-        # Assume list of paths → extract ticker from filename
-        paths_dict = {}
-        for path in file_paths:
-            filename = os.path.basename(path)
-            ticker = os.path.splitext(filename)[0]  # Removes .csv
-            paths_dict[ticker] = path
-
-    for ticker, path in paths_dict.items():
-        if not os.path.exists(path):
-            print(f"Warning: File not found → {path}")
-            continue
-            
-        df = pd.read_csv(path, parse_dates=['Date'])
-        
-        # Basic cleaning
-        df = df.sort_values('Date').reset_index(drop=True)
-        df['Ticker'] = ticker
-        
-        # Ensure columns are in standard order
-        cols_order = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'Ticker']
-        # In case some files have extra columns (like Adj Close), keep only main ones
-        df = df[['Date', 'Open', 'High', 'Low', 'Close', 'Volume'] + (['Ticker'] if 'Ticker' in df.columns else [])]
-        
-        dfs.append(df)
-    
-    if not dfs:
-        raise ValueError("No data was loaded. Check your file paths.")
-    
-    # Concatenate all
-    combined = pd.concat(dfs, ignore_index=True)
-    
-    # Final sort: earliest date first, then by ticker alphabetically on same date
-    combined = combined.sort_values(by=['Date', 'Ticker']).reset_index(drop=True)
-    
-    return combined
