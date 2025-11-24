@@ -11,8 +11,7 @@ This folder contains Jupyter notebooks for exploratory analysis and reporting.
 
 ### Future Notebooks (Planned)
 - 02_quant_analysis.ipynb
-- 03_sentiment_analysis.ipynb
-- 04_predictive_modeling.ipynb
+- 03_sentiment_correlation.ipynb
 
 ## How to Run
 1. Install requirements: `pip install -r requirements.txt`
